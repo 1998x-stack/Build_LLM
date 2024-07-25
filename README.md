@@ -2,6 +2,10 @@
 
 这是一个关于Build Large Language Model的目录结构。
 
+
+- https://github.com/rasbt/LLMs-from-scratch
+- https://chatgpt.com/share/b8ecb0bb-3f85-48ff-aaae-768851d8910e
+
 # 2_Understanding_Large_Language_Models
 
 - [00_2.1_What_is_a_LLM](.//2_Understanding_Large_Language_Models/00_2.1_What_is_a_LLM.py)
