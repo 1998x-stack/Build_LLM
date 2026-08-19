@@ -8,8 +8,6 @@ Content: 4.5 从零实现自注意力机制
 import numpy as np
 import torch
 import torch.nn.functional as F
-import math
-from typing import Any
 
 
 def compute_attention_numpy(q: np.ndarray, k: np.ndarray, v: np.ndarray,
