@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+"""
+=====================================================================
+⚠️  一次性仓库脚手架生成器  /  ONE-TIME REPO SCAFFOLDING GENERATOR
+---------------------------------------------------------------------
+仅用于仓库创建时生成目录结构、骨架 .md 文件并重建 README.md。
+
+不要重新运行本脚本（DO NOT re-run）:
+- 会覆盖 README.md（overwrites README.md）
+- 会重建/覆盖骨架 .md 文件（recreates skeleton files）
+
+逻辑保持不变: 默认拒绝运行; 仅在显式设置 BUILD_LLM_GEN=1 时执行。
+Logic is unchanged: the generator refuses to run unless the
+environment flag BUILD_LLM_GEN=1 is set.
+=====================================================================
+"""
+
 structure = {
     "2_Understanding_Large_Language_Models": [
         "2.1_What_is_a_LLM",
@@ -37,6 +54,18 @@ structure = {
 
 import os
 from typing import Dict, Any
+
+# 安全锁定: 默认拒绝重新运行（这是创建时的脚手架脚本）。
+# Run-guard: refuse to re-run unless explicitly allowed.
+if os.environ.get("BUILD_LLM_GEN") != "1":
+    raise SystemExit(
+        "[main] 这是仓库创建时的一次性脚手架生成脚本，已冻结，不要重新运行。"
+        " This is a one-time scaffolding generator; do NOT re-run it.\n"
+        "运行它会覆盖 README.md 并重建骨架文件。It overwrites README.md and rebuilds skeleton files.\n"
+        "如确实需要重新生成，请设置环境变量 BUILD_LLM_GEN=1 "
+        "(To force re-run, set BUILD_LLM_GEN=1).\n"
+    )
+
 
 def create_directories_and_files(
         base_path: str, 
