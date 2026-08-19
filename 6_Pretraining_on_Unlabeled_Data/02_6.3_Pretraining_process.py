@@ -46,6 +46,17 @@ class MultiHeadAttention(nn.Module):
         self.fc_out = nn.Linear(embed_size, embed_size)
 
     def forward(self, v, k, q, mask: Optional[torch.Tensor] = None):
+        """多头注意力前向计算。
+
+        Args:
+            v (torch.Tensor): 值序列, 形状 (N, L, embed_size)。
+            k (torch.Tensor): 键序列, 形状 (N, L, embed_size)。
+            q (torch.Tensor): 查询序列, 形状 (N, L, embed_size)。
+            mask (Optional[torch.Tensor]): 形状 (L, L) 的 0/1 掩码; 为 0 的位置填充为极小值。
+
+        Returns:
+            torch.Tensor: 自注意力输出, 形状 (N, L, embed_size)。
+        """
         N, v_len, k_len, q_len = q.shape[0], v.shape[1], k.shape[1], q.shape[1]
         v = v.reshape(N, v_len, self.heads, self.head_dim)
         k = k.reshape(N, k_len, self.heads, self.head_dim)
@@ -74,6 +85,15 @@ class GPTBlock(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, mask: Optional[torch.Tensor] = None):
+        """前向 GPT 块: 自注意力 + 前馈, 均带残差/LayerNorm/dropout。
+
+        Args:
+            x (torch.Tensor): 输入序列, 形状 (N, seq_len, embed_size)。
+            mask (Optional[torch.Tensor]): 可选注意力掩码。
+
+        Returns:
+            torch.Tensor: 输出序列, 形状 (N, seq_len, embed_size)。
+        """
         x = self.dropout(self.norm1(x + self.attention(x, x, x, mask)))
         return self.dropout(self.norm2(x + self.feed_forward(x)))
 
@@ -94,6 +114,14 @@ class GPT(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor):
+        """前向 GPT 语言模型, 内置因果掩码。
+
+        Args:
+            x (torch.Tensor): token 索引, 形状 (N, seq_len)。
+
+        Returns:
+            torch.Tensor: 词表 logits, 形状 (N, seq_len, vocab_size)。
+        """
         N, seq_len = x.shape
         positions = torch.arange(0, seq_len).expand(N, seq_len).to(self.device)
         out = self.dropout(self.word_embedding(x) + self.position_embedding(positions))
