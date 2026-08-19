@@ -35,7 +35,7 @@
 
 > **状态**：第 2 章为**概念性讲解**，`.py` 为指向对应 `.md` 的占位 stub，无独立代码实现（详见 [状态说明](#位置status)）。
 
-#### Chapter 3：文本数据处理 / Working with Text Data
+#### <a id="chapter-3"></a>Chapter 3：文本数据处理 / Working with Text Data
 
 | Lecture | `.py` | `.md` |
 |---------|-------|-------|
@@ -45,7 +45,7 @@
 | 3.4 Adding special context tokens | [py](./3_Working_with_Text_Data/03_3.4_Adding_special_context_tokens.py) | [md](./3_Working_with_Text_Data/03_3.4_Adding_special_context_tokens.md) |
 | 3.5 Byte pair encoding | [py](./3_Working_with_Text_Data/04_3.5_Byte_pair_encoding.py) | [md](./3_Working_with_Text_Data/04_3.5_Byte_pair_encoding.md) |
 
-#### Chapter 4：编码注意力机制 / Coding Attention Mechanisms
+#### <a id="chapter-4"></a>Chapter 4：编码注意力机制 / Coding Attention Mechanisms
 
 | Lecture | `.py` | `.md` |
 |---------|-------|-------|
@@ -57,7 +57,7 @@
 
 > 说明：4.1 为概念性讲解（stub），其余 4.2–4.5 均已实现。4.2/4.3 与 `common/attention.py` 保持同步（见 [核心设计](#核心设计规范-canonical-modules)）。
 
-#### Chapter 5：从零实现 GPT 模型 / Implementing a GPT Model from Scratch
+#### <a id="chapter-5"></a>Chapter 5：从零实现 GPT 模型 / Implementing a GPT Model from Scratch
 
 | Lecture | `.py` | `.md` |
 |---------|-------|-------|
@@ -68,7 +68,7 @@
 
 > 说明：5.2 与 `common/attention.py` 保持同步。
 
-#### Chapter 6：基于无标注数据的预训练 / Pretraining on Unlabeled Data
+#### <a id="chapter-6"></a>Chapter 6：基于无标注数据的预训练 / Pretraining on Unlabeled Data
 
 | Lecture | `.py` | `.md` |
 |---------|-------|-------|
@@ -145,7 +145,7 @@ common/attention.py                                (canonical / 单一事实来�
 
 ---
 
-## 状态 / Status
+## <a id="位置status"></a>状态 / Status
 
 | 章节 | 状态 | 实现说明 |
 |------|------|---------|
