@@ -27,9 +27,9 @@ class GPTSelfAttention(nn.Module):
 
         assert self.head_dim * heads == embed_size, "Embedding size needs to be divisible by heads"
 
-        self.values = nn.Linear(self.head_dim, embed_size, bias=False)
-        self.keys = nn.Linear(self.head_dim, embed_size, bias=False)
-        self.queries = nn.Linear(self.head_dim, embed_size, bias=False)
+        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.queries = nn.Linear(self.head_dim, self.head_dim, bias=False)
         self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
 
     def forward(self, values: torch.Tensor, keys: torch.Tensor, query: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -61,7 +61,7 @@ class GPTSelfAttention(nn.Module):
         if mask is not None:
             energy = energy.masked_fill(mask == 0, float("-1e20"))
 
-        attention = torch.softmax(energy / (self.embed_size ** (1 / 2)), dim=3)
+        attention = torch.softmax(energy / (self.head_dim ** (1 / 2)), dim=3)
 
         out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(N, query_len, self.heads * self.head_dim)
 

@@ -105,7 +105,7 @@ class BytePairEncoding:
         返回:
         str: 解码后的文本。
         """
-        return ''.join(tokens).replace(' </w>', '')
+        return ''.join(tokens).replace('</w>', '')
 
 # 示例使用
 if __name__ == "__main__":

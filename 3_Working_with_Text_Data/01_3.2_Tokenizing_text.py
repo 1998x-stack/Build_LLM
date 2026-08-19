@@ -30,6 +30,7 @@ class TextTokenizer:
         self.vocab = vocab
         self.str_to_int = vocab
         self.int_to_str = {i: s for s, i in vocab.items()}
+        self.token_counts = {}  # 记录每个token的出现频率
 
     def build_vocab(self, sentences: List[str]):
         """
@@ -47,6 +48,10 @@ class TextTokenizer:
         self.int_to_str = {idx: word for word, idx in self.str_to_int.items()}
         self.str_to_int.update(self.vocab)  # 保留原始词汇表
         self.int_to_str.update({0: "<|unk|>"})  # 确保<|unk|>在索引中
+        # 统计每个token在所有句子中的出现频率
+        from collections import Counter
+        words = [w for sentence in sentences for w in re.split(r'\s+', sentence)]
+        self.token_counts = Counter(words)
         print(f"词汇表构建完成，共包含{len(self.str_to_int)}个单词。")
 
     def encode(self, text: str) -> List[int]:
@@ -88,9 +93,7 @@ class TextTokenizer:
         Returns:
             List[str]: 最常见的token列表
         """
-        token_counts = {token: self.vocab.count(token) for token in self.vocab}
-        sorted_tokens = sorted(token_counts, key=token_counts.get, reverse=True)
-        return sorted_tokens[:top_n]
+        return [token for token, _ in self.token_counts.most_common(top_n)]
 
 # 示例用法
 if __name__ == "__main__":
