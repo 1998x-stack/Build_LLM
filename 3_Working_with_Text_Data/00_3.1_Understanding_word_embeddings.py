@@ -122,5 +122,5 @@ if __name__ == "__main__":
     print(f"与单词 '{word}' 最相似的三个单词是：{similar_words}")
 
     # 保存和加载嵌入
-    embedding.save_embeddings("/mnt/data/word_embeddings.npy")
-    embedding.load_embeddings("/mnt/data/word_embeddings.npy")
+    embedding.save_embeddings("./word_embeddings.npy")
+    embedding.load_embeddings("./word_embeddings.npy")
