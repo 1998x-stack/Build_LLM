@@ -4,6 +4,7 @@
 Lecture: /4_Coding_Attention_Mechanisms
 Content: 02_4.3_Multi-head_attention_mechanisms
 """
+# 与 common/attention.py 保持同步 (canonical) — 见 README
 
 import torch
 import torch.nn as nn
