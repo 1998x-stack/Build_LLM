@@ -1,1 +1,3 @@
-"""common 包：跨章节共享的单一事实来源 (canonical) 模块。"""
+from common.attention import GPT, GPTBlock, MultiHeadAttention
+
+__all__ = ["GPT", "GPTBlock", "MultiHeadAttention"]

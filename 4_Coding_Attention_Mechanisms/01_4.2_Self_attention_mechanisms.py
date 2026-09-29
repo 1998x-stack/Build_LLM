@@ -1,94 +1,29 @@
-# 01_4.2_Self-attention_mechanisms
+# 01_4.2_Self_attention_mechanisms
 
-"""
-Lecture: /4_Coding_Attention_Mechanisms
-Content: 01_4.2_Self-attention_mechanisms
-"""
-# 与 common/attention.py 保持同步 (canonical) — 见 README
+"""Lecture 4.2: self-attention using the canonical full-width Q/K/V implementation."""
+
+from pathlib import Path
+import sys
 
 import torch
-import torch.nn as nn
-from typing import Tuple
 
-class SelfAttention(nn.Module):
-    def __init__(self, embed_size: int, heads: int):
-        """
-        自注意力机制的初始化方法。
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
-        参数:
-        embed_size (int): 嵌入向量的维度。
-        heads (int): 多头注意力机制的头数。
-        """
-        super(SelfAttention, self).__init__()
-        self.embed_size = embed_size
-        self.heads = heads
-        self.head_dim = embed_size // heads
+from common.attention import MultiHeadAttention
 
-        assert (
-            self.head_dim * heads == embed_size
-        ), "Embedding size needs to be divisible by heads"
 
-        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.queries = nn.Linear(self.head_dim, self.head_dim, bias=False)
-        self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
+class SelfAttention(MultiHeadAttention):
+    """Teaching alias preserving the original lecture class name."""
 
-    def forward(self, values: torch.Tensor, keys: torch.Tensor, query: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """
-        前向传播方法。
 
-        参数:
-        values (torch.Tensor): 值向量，形状为(batch_size, value_len, embed_size)。
-        keys (torch.Tensor): 键向量，形状为(batch_size, key_len, embed_size)。
-        query (torch.Tensor): 查询向量，形状为(batch_size, query_len, embed_size)。
-        mask (torch.Tensor): 掩码张量，形状为(batch_size, 1, 1, key_len)。
-
-        返回:
-        torch.Tensor: 自注意力机制的输出，形状为(batch_size, query_len, embed_size)。
-        """
-        N = query.shape[0]
-
-        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
-
-        # 将输入分割成多个头
-        values = values.reshape(N, value_len, self.heads, self.head_dim)
-        keys = keys.reshape(N, key_len, self.heads, self.head_dim)
-        queries = query.reshape(N, query_len, self.heads, self.head_dim)
-
-        values = self.values(values)
-        keys = self.keys(keys)
-        queries = self.queries(queries)
-
-        # 计算注意力得分
-        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
-        
-        if mask is not None:
-            energy = energy.masked_fill(mask == 0, float("-1e20"))
-
-        # 计算注意力权重
-        attention = torch.softmax(energy / (self.head_dim ** (1 / 2)), dim=3)
-
-        # 计算加权和值
-        out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(N, query_len, self.heads * self.head_dim)
-
-        out = self.fc_out(out)
-
-        return out
-
-# 示例使用
 if __name__ == "__main__":
-    embed_size = 256
-    heads = 8
-    query_len = 10
-    key_len = 10
-    value_len = 10
-    batch_size = 64
-
-    values = torch.rand((batch_size, value_len, embed_size))
-    keys = torch.rand((batch_size, key_len, embed_size))
-    query = torch.rand((batch_size, query_len, embed_size))
-    mask = torch.ones((batch_size, 1, 1, key_len))
-
-    self_attention = SelfAttention(embed_size, heads)
-    out = self_attention(values, keys, query, mask)
-    print(f"Output shape: {out.shape}")
+    torch.manual_seed(0)
+    module = SelfAttention(embed_size=64, heads=4)
+    x = torch.randn(2, 6, 64)
+    causal = torch.tril(torch.ones(6, 6)).view(1, 1, 6, 6)
+    out = module(x, x, x, causal)
+    print("Input shape:", tuple(x.shape))
+    print("Output shape:", tuple(out.shape))
+    print("Q projection:", module.queries.in_features, "->", module.queries.out_features)
