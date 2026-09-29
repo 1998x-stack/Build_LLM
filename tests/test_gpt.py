@@ -1,26 +1,78 @@
-import os, torch, importlib.util
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-def load(rel, name):
-    s = importlib.util.spec_from_file_location(name, os.path.join(ROOT, rel))
-    m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
-from common.attention import GPT, MultiHeadAttention, GPTBlock
+import torch
+import torch.nn as nn
 
-def test_gpt_forward_shape():
-    model = GPT(16, 32, 2, 4, "cpu", 4, 0.0, 20)
+from build_llm.config import GPTConfig
+from build_llm.model import GPTModel
+from common.attention import GPT
+
+
+def _config():
+    return GPTConfig(
+        vocab_size=16,
+        context_length=20,
+        d_model=32,
+        n_layers=2,
+        n_heads=4,
+        dropout=0.0,
+    )
+
+
+def test_gpt_forward_shape_and_final_norm():
+    model = GPTModel(_config())
     out = model(torch.randint(0, 16, (2, 6)))
-    assert tuple(out.shape) == (2, 6, 16)
+    assert out.shape == (2, 6, 16)
+    assert isinstance(model.final_norm, nn.LayerNorm)
+
+
+def test_gpt_uses_pre_norm_gelu_blocks():
+    model = GPTModel(_config())
+    block = model.blocks[0]
+    assert isinstance(block.norm1, nn.LayerNorm)
+    assert any(
+        isinstance(module, nn.GELU)
+        for module in block.feed_forward.modules()
+    )
+
 
 def test_gpt_causal_pos0_unaffected_by_future():
-    m = GPT(16, 32, 2, 4, "cpu", 4, 0.0, 20)
+    torch.manual_seed(0)
+    model = GPTModel(_config())
+    model.eval()
     x1 = torch.tensor([[3, 4, 5, 6, 7, 8]])
-    x2 = torch.tensor([[3, 9, 9, 9, 9, 9]])   # same pos-0, different future
-    assert torch.allclose(m(x1)[0, 0], m(x2)[0, 0], atol=1e-5)
+    x2 = torch.tensor([[3, 9, 9, 9, 9, 9]])
+    assert torch.allclose(
+        model(x1)[0, 0],
+        model(x2)[0, 0],
+        atol=1e-6,
+    )
 
-def test_gpt_copy_consistent_with_52():
-    m52 = load("5_Implementing_a_GPT_model_from_Scratch_To_Generate_Text/01_5.2_Implementing_GPT_model.py", "g52")
-    g = GPT(16, 32, 2, 4, "cpu", 4, 0.0, 20)
-    g52 = m52.GPT(16, 32, 2, 4, "cpu", 4, 0.0, 20)
-    g.load_state_dict(g52.state_dict())
-    x = torch.randint(0, 16, (2, 6))
-    mask = torch.tril(torch.ones(6, 6))          # 5.2 requires the mask passed explicitly
-    assert torch.equal(g(x), g52(x, mask))       # identical & causal
+
+def test_backward_gradients_are_finite():
+    model = GPTModel(_config())
+    x = torch.randint(0, 16, (2, 8))
+    y = torch.randint(0, 16, (2, 8))
+    logits = model(x)
+    loss = torch.nn.functional.cross_entropy(
+        logits.reshape(-1, 16), y.reshape(-1)
+    )
+    loss.backward()
+    grads = [
+        parameter.grad
+        for parameter in model.parameters()
+        if parameter.grad is not None
+    ]
+    assert grads
+    assert all(torch.isfinite(grad).all() for grad in grads)
+
+
+def test_legacy_gpt_constructor_is_device_agnostic():
+    model = GPT(
+        16, 32, 2, 4, "cpu", 4, 0.0, 20
+    )
+    assert not hasattr(model, "device")
+    model = model.to("cpu")
+    assert model(torch.randint(0, 16, (1, 4))).shape == (
+        1,
+        4,
+        16,
+    )
