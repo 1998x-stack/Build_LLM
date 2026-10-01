@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>4.2 Self attention mechanisms</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>01_4.2_Self-attention_mechanisms</h1>
+<pre><code>Lecture: /4_Coding_Attention_Mechanisms
+Content: 01_4.2_Self-attention_mechanisms
+</code></pre>
+<h3>4.2 自注意力机制</h3>
+<h4>背景介绍</h4>
+<p>自注意力机制（Self-Attention Mechanism）是深度学习中一种关键的注意力机制，尤其在Transformer模型中得到了广泛应用。自注意力机制允许模型在处理一个序列的每个元素时，动态地关注序列中其他所有元素。这种机制不仅提高了模型捕获长距离依赖关系的能力，还显著提高了并行计算的效率。</p>
+<h4>自注意力机制的基本原理</h4>
+<p>自注意力机制的核心思想是计算序列中每个位置的查询向量（Query）与其他位置的键向量（Key）之间的点积，得到注意力分数（Attention Scores）。这些分数经过归一化处理后，用于加权求和值向量（Value），从而生成最终的输出。</p>
+<h5>具体步骤</h5>
+<ol>
+<li>
+<p><strong>计算查询、键和值向量</strong>：</p>
+<ul>
+<li>输入序列中的每个元素经过线性变换得到查询向量（Q）、键向量（K）和值向量（V）。</li>
+</ul>
+</li>
+<li>
+<p><strong>计算注意力分数</strong>：</p>
+<ul>
+<li>对每个查询向量，计算其与所有键向量的点积，得到注意力分数。</li>
+<li>将注意力分数除以键向量的维度的平方根，以避免大值影响梯度计算。</li>
+</ul>
+</li>
+<li>
+<p><strong>计算注意力权重</strong>：</p>
+<ul>
+<li>对归一化后的注意力分数应用Softmax函数，得到注意力权重（Attention Weights）。</li>
+</ul>
+</li>
+<li>
+<p><strong>加权求和</strong>：</p>
+<ul>
+<li>使用注意力权重对值向量进行加权求和，得到最终的输出向量。</li>
+</ul>
+</li>
+</ol>
+<h5>数学公式</h5>
+<p>给定查询向量$ Q $、键向量$ K $和值向量$ V $，自注意力机制的计算公式为：</p>
+<p>$$ \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V $$</p>
+<p>其中，$ d_k $是键向量的维度，用于缩放点积结果。</p>
+<h4>自注意力机制的优点</h4>
+<ol>
+<li><strong>并行计算</strong>：与RNN不同，自注意力机制能够并行处理输入序列，大大提高了计算效率。</li>
+<li><strong>长距离依赖</strong>：自注意力机制能够直接捕获序列中任意位置的依赖关系，解决了RNN中长距离依赖问题。</li>
+<li><strong>可解释性</strong>：注意力权重提供了对模型决策过程的可解释性，能够展示模型在处理每个输入时关注的具体部分。</li>
+</ol>
+<h4>自注意力机制在Transformer中的应用</h4>
+<p>在Transformer模型中，自注意力机制是编码器和解码器的核心组件。Transformer的每一层都由多头自注意力机制和前馈神经网络组成。</p>
+<h5>多头自注意力机制</h5>
+<p>多头自注意力机制通过并行计算多个注意力头，捕获不同子空间中的信息。这种方法增强了模型的表达能力和学习复杂模式的能力。具体来说，多头自注意力机制包括以下步骤：</p>
+<ol>
+<li><strong>线性变换</strong>：
+<ul>
+<li>输入序列通过线性变换生成多个查询、键和值向量。</li>
+</ul>
+</li>
+<li><strong>并行计算</strong>：
+<ul>
+<li>对每个查询向量，计算其与对应键向量的点积，得到注意力分数，并通过Softmax函数得到注意力权重。</li>
+</ul>
+</li>
+<li><strong>加权求和</strong>：
+<ul>
+<li>使用注意力权重对对应值向量进行加权求和，得到每个头的输出。</li>
+</ul>
+</li>
+<li><strong>连接和线性变换</strong>：
+<ul>
+<li>将所有头的输出连接起来，通过线性变换生成最终的输出向量。</li>
+</ul>
+</li>
+</ol>
+<h4>自注意力机制的挑战</h4>
+<p>虽然自注意力机制在许多任务中表现出色，但其计算复杂度较高，特别是当输入序列较长时。为此，研究人员提出了多种优化方法，如稀疏注意力机制和高效自注意力机制，以降低计算成本。</p>
+<h4>自注意力机制的实际应用</h4>
+<p>自注意力机制在多种NLP任务中得到了成功应用，包括机器翻译、文本生成、情感分析和阅读理解等。以下是几个具体应用场景：</p>
+<ol>
+<li><strong>机器翻译</strong>：
+<ul>
+<li>自注意力机制使Transformer能够捕获源语言和目标语言之间的长距离依赖，提高翻译质量。</li>
+</ul>
+</li>
+<li><strong>文本生成</strong>：
+<ul>
+<li>自注意力机制使模型能够灵活地关注生成过程中的不同部分，提高文本生成的连贯性和流畅性。</li>
+</ul>
+</li>
+<li><strong>情感分析</strong>：
+<ul>
+<li>自注意力机制通过选择性关注文本中的情感关键词，提高情感分析的准确性。</li>
+</ul>
+</li>
+<li><strong>阅读理解</strong>：
+<ul>
+<li>自注意力机制通过捕获上下文信息，帮助模型更好地理解和回答复杂问题。</li>
+</ul>
+</li>
+</ol>
+<h4>总结</h4>
+<p>自注意力机制是深度学习中的一项重要技术，通过选择性地关注输入序列中的不同部分，提高了模型的性能和可解释性。多头自注意力机制进一步增强了模型的表达能力，使其在各种NLP任务中表现出色。未来，随着研究的深入，自注意力机制将继续推动深度学习技术的发展和应用。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 01_4.2_Self-attention_mechanisms
+
+"""
+Lecture: /4_Coding_Attention_Mechanisms
+Content: 01_4.2_Self-attention_mechanisms
+"""
+
+import torch
+import torch.nn as nn
+from typing import Tuple
+
+class SelfAttention(nn.Module):
+    def __init__(self, embed_size: int, heads: int):
+        """
+        自注意力机制的初始化方法。
+
+        参数:
+        embed_size (int): 嵌入向量的维度。
+        heads (int): 多头注意力机制的头数。
+        """
+        super(SelfAttention, self).__init__()
+        self.embed_size = embed_size
+        self.heads = heads
+        self.head_dim = embed_size // heads
+
+        assert (
+            self.head_dim * heads == embed_size
+        ), "Embedding size needs to be divisible by heads"
+
+        self.values = nn.Linear(self.head_dim, embed_size, bias=False)
+        self.keys = nn.Linear(self.head_dim, embed_size, bias=False)
+        self.queries = nn.Linear(self.head_dim, embed_size, bias=False)
+        self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
+
+    def forward(self, values: torch.Tensor, keys: torch.Tensor, query: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """
+        前向传播方法。
+
+        参数:
+        values (torch.Tensor): 值向量，形状为(batch_size, value_len, embed_size)。
+        keys (torch.Tensor): 键向量，形状为(batch_size, key_len, embed_size)。
+        query (torch.Tensor): 查询向量，形状为(batch_size, query_len, embed_size)。
+        mask (torch.Tensor): 掩码张量，形状为(batch_size, 1, 1, key_len)。
+
+        返回:
+        torch.Tensor: 自注意力机制的输出，形状为(batch_size, query_len, embed_size)。
+        """
+        N = query.shape[0]
+
+        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
+
+        # 将输入分割成多个头
+        values = values.reshape(N, value_len, self.heads, self.head_dim)
+        keys = keys.reshape(N, key_len, self.heads, self.head_dim)
+        queries = query.reshape(N, query_len, self.heads, self.head_dim)
+
+        values = self.values(values)
+        keys = self.keys(keys)
+        queries = self.queries(queries)
+
+        # 计算注意力得分
+        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
+        
+        if mask is not None:
+            energy = energy.masked_fill(mask == 0, float("-1e20"))
+
+        # 计算注意力权重
+        attention = torch.softmax(energy / (self.embed_size ** (1 / 2)), dim=3)
+
+        # 计算加权和值
+        out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(N, query_len, self.heads * self.head_dim)
+
+        out = self.fc_out(out)
+
+        return out
+
+# 示例使用
+if __name__ == "__main__":
+    embed_size = 256
+    heads = 8
+    query_len = 10
+    key_len = 10
+    value_len = 10
+    batch_size = 64
+
+    values = torch.rand((batch_size, value_len, embed_size))
+    keys = torch.rand((batch_size, key_len, embed_size))
+    query = torch.rand((batch_size, query_len, embed_size))
+    mask = torch.ones((batch_size, 1, 1, key_len))
+
+    self_attention = SelfAttention(embed_size, heads)
+    out = self_attention(values, keys, query, mask)
+    print(f"Output shape: {out.shape}")</code></pre>
+  </div>
+</body>
+</html>
+  

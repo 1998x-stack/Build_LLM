@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>3.4 Adding special context tokens</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>03_3.4_Adding_special_context_tokens</h1>
+<pre><code>Lecture: /3_Working_with_Text_Data
+Content: 03_3.4_Adding_special_context_tokens
+</code></pre>
+<h3>2.4 添加特殊上下文标记</h3>
+<h4>背景介绍</h4>
+<p>在上一节中，我们实现了一个简单的标记器，并将其应用于训练集中的文本段落。在这一节中，我们将修改该标记器，以处理未知单词和添加特殊上下文标记。这些特殊标记可以包括表示未知单词和文档边界的标记。</p>
+<h4>为什么需要特殊上下文标记</h4>
+<p>当处理大型语言模型（LLM）时，常常会遇到训练集中未包含的单词，或需要在不同文档或文本段落之间添加分隔符，以帮助模型理解上下文。例如，我们可以添加一个 <code>&lt;|unk|&gt;</code> 标记来表示新的未知单词，或添加一个 <code>&lt;|endoftext|&gt;</code> 标记来分隔两个不相关的文本源。</p>
+<h5>图2.9：词汇表中添加特殊标记</h5>
+<p>如图2.9所示，我们可以修改标记器，使其在遇到不在词汇表中的单词时使用 <code>&lt;|unk|&gt;</code> 标记。此外，我们可以在不相关的文本之间添加一个 <code>&lt;|endoftext|&gt;</code> 标记。例如，当在多个独立文档或书籍上训练GPT类的LLM时，通常在每个文档或书籍之前插入一个标记，以帮助LLM理解这些文本源虽然被连接在一起进行训练，但实际上是不相关的。</p>
+<h5>图2.10：处理多个独立文本源时添加 <code>&lt;|endoftext|&gt;</code> 标记</h5>
+<p>当处理多个独立的文本源时，我们在这些文本之间添加 <code>&lt;|endoftext|&gt;</code> 标记。这些 <code>&lt;|endoftext|&gt;</code> 标记作为标记，标志着特定段落的开始或结束，从而允许LLM更有效地处理和理解这些文本。</p>
+<h4>修改词汇表以包括特殊标记</h4>
+<p>让我们通过在之前创建的所有唯一单词列表中添加这些特殊标记 <code>&lt;|endoftext|&gt;</code> 和 <code>&lt;|unk|&gt;</code> 来修改词汇表：</p>
+<pre><code class="language-python">all_tokens = sorted(list(set(preprocessed)))
+all_tokens.extend([&quot;&lt;|endoftext|&gt;&quot;, &quot;&lt;|unk|&gt;&quot;])
+vocab = {token: integer for integer, token in enumerate(all_tokens)}
+
+print(len(vocab.items()))
+</code></pre>
+<p>根据上述代码的输出，新词汇表的大小为1161（前一节中的词汇表大小为1159）。为了进行额外的快速检查，让我们打印更新后的词汇表的最后5个条目：</p>
+<pre><code class="language-python">for i, item in enumerate(list(vocab.items())[-5:]):
+    print(item)
+</code></pre>
+<p>上述代码打印了以下内容：</p>
+<pre><code>('younger', 1156)
+('your', 1157)
+('yourself', 1158)
+('&lt;|endoftext|&gt;', 1159)
+('&lt;|unk|&gt;', 1160)
+</code></pre>
+<p>基于上述代码输出，我们可以确认这两个新的特殊标记已经成功地包含在词汇表中。接下来，我们根据代码清单2.3相应地调整标记器，如代码清单2.4所示：</p>
+<h4>代码清单2.4：处理未知单词的简单文本标记器</h4>
+<pre><code class="language-python">class SimpleTokenizerV2:
+    def __init__(self, vocab):
+        self.str_to_int = vocab
+        self.int_to_str = {i: s for s, i in vocab.items()}
+
+    def encode(self, text):
+        preprocessed = re.split(r'([,.?_!&quot;()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        preprocessed = [item if item in self.str_to_int else &quot;&lt;|unk|&gt;&quot; for item in preprocessed]
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+
+    def decode(self, ids):
+        text = &quot; &quot;.join([self.int_to_str[i] for i in ids])
+        text = re.sub(r'\s+([,.?!&quot;()\'])', r'\1', text)
+        return text
+</code></pre>
+<p>相比于我们在上一节代码清单2.3中实现的SimpleTokenizerV1，新版的SimpleTokenizerV2在处理未知单词时用 <code>&lt;|unk|&gt;</code> 标记替换。</p>
+<h4>实践中使用新的标记器</h4>
+<p>为了测试新的标记器，我们将使用由两句独立且不相关的句子连接而成的一个简单文本样本：</p>
+<pre><code class="language-python">text1 = &quot;Hello, do you like tea?&quot;
+text2 = &quot;In the sunlit terraces of the palace.&quot;
+text = &quot; &lt;|endoftext|&gt; &quot;.join((text1, text2))
+print(text)
+</code></pre>
+<p>输出如下：</p>
+<pre><code>'Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of the palace.'
+</code></pre>
+<p>接下来，让我们使用之前创建的词汇表对示例文本进行标记化：</p>
+<pre><code class="language-python">tokenizer = SimpleTokenizerV2(vocab)
+print(tokenizer.encode(text))
+</code></pre>
+<p>这打印了以下标记ID：</p>
+<pre><code>[1160, 5, 362, 1155, 642, 1000, 10, 1159, 57, 1013, 981, 1009, 738, 1013, 1160, 7]
+</code></pre>
+<p>上述列表中包含的标记ID 1159表示 <code>&lt;|endoftext|&gt;</code> 分隔符标记，以及两个 1160 标记，用于表示未知单词。</p>
+<p>让我们进行快速检查，解码这些标记ID：</p>
+<pre><code class="language-python">print(tokenizer.decode(tokenizer.encode(text)))
+</code></pre>
+<p>输出如下：</p>
+<pre><code>'&lt;|unk|&gt;, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of the &lt;|unk|&gt;.'
+</code></pre>
+<p>通过将解码后的文本与原始输入文本进行比较，我们可以确定训练数据集（Edith Wharton的短篇小说《The Verdict》）中没有包含单词 &quot;Hello&quot; 和 &quot;palace&quot;。</p>
+<h4>讨论其他特殊标记</h4>
+<p>除了我们已经讨论的 <code>&lt;|unk|&gt;</code> 和 <code>&lt;|endoftext|&gt;</code> 标记，根据具体需求和应用场景，还可以考虑其他特殊标记，例如：</p>
+<ul>
+<li><code>[BOS]</code>（序列开始）：这个标记用于标识文本的开始位置。</li>
+<li><code>[EOS]</code>（序列结束）：这个标记用于标识文本的结束位置，特别适用于连接多个不相关的文本段落。</li>
+<li><code>[PAD]</code>（填充）：在使用大于一个的批处理大小训练LLM时，为确保所有文本长度相同，可以使用 <code>[PAD]</code> 标记将较短的文本扩展到最长文本的长度。</li>
+</ul>
+<p>需要注意的是，GPT模型使用的标记器只使用一个 <code>&lt;|endoftext|&gt;</code> 标记以简化处理。这个标记不仅用于分隔，还用于填充。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 03_3.4_Adding_special_context_tokens
+
+"""
+Lecture: /3_Working_with_Text_Data
+Content: 03_3.4_Adding_special_context_tokens
+"""
+
+import re
+from typing import List, Dict
+
+class TokenizerWithSpecialTokens:
+    def __init__(self, vocab: Dict[str, int]):
+        """
+        初始化标记器。
+
+        参数:
+        vocab (Dict[str, int]): 词汇表，从字符串标记到整数ID的映射。
+        """
+        self.str_to_int = vocab  # 词汇表，从字符串到整数的映射
+        self.int_to_str = {i: s for s, i in vocab.items()}  # 逆词汇表，从整数到字符串的映射
+
+    def encode(self, text: str) -> List[int]:
+        """
+        将文本编码为标记ID。
+
+        参数:
+        text (str): 输入文本。
+
+        返回:
+        List[int]: 标记ID列表。
+        """
+        # 使用正则表达式拆分文本为标记
+        preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        # 将标记转换为标记ID，处理未知标记
+        ids = [self.str_to_int.get(s, self.str_to_int["<|unk|>"]) for s in preprocessed]
+        return ids
+
+    def decode(self, ids: List[int]) -> str:
+        """
+        将标记ID解码为文本。
+
+        参数:
+        ids (List[int]): 标记ID列表。
+
+        返回:
+        str: 解码后的文本。
+        """
+        # 将标记ID转换为字符串标记
+        text = " ".join([self.int_to_str[i] for i in ids])
+        # 修正标点符号前的空格
+        text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+        return text
+
+def build_vocab(preprocessed: List[str]) -> Dict[str, int]:
+    """
+    构建词汇表。
+
+    参数:
+    preprocessed (List[str]): 预处理后的标记列表。
+
+    返回:
+    Dict[str, int]: 词汇表，从字符串标记到整数ID的映射。
+    """
+    all_tokens = sorted(list(set(preprocessed)))
+    all_tokens.extend(["<|endoftext|>", "<|unk|>"])
+    vocab = {token: integer for integer, token in enumerate(all_tokens)}
+    return vocab
+
+# 示例使用
+if __name__ == "__main__":
+    # 示例文本
+    text = """I HAD always thought Jack Gisburn rather a cheap genius -- though a good fellow enough -- so it was no great surprise to me to hear that, in"""
+
+    # 构建词汇表
+    preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+    preprocessed = [item.strip() for item in preprocessed if item.strip()]
+    vocab = build_vocab(preprocessed)
+
+    # 初始化标记器
+    tokenizer = TokenizerWithSpecialTokens(vocab)
+
+    # 编码和解码示例
+    encoded = tokenizer.encode(text)
+    print("Encoded:", encoded)
+    decoded = tokenizer.decode(encoded)
+    print("Decoded:", decoded)
+
+    # 处理包含未知词汇的新文本样本
+    text1 = "Hello, do you like tea?"
+    text2 = "In the sunlit terraces of the palace."
+    text = " <|endoftext|> ".join((text1, text2))
+    print("New Text:", text)
+
+    encoded = tokenizer.encode(text)
+    print("Encoded with Special Tokens:", encoded)
+    decoded = tokenizer.decode(encoded)
+    print("Decoded with Special Tokens:", decoded)
+</code></pre>
+  </div>
+</body>
+</html>
+  

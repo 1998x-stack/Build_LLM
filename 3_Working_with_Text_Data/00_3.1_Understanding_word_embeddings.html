@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>3.1 Understanding word embeddings</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>00_3.1_Understanding_word_embeddings</h1>
+<pre><code>Lecture: /3_Working_with_Text_Data
+Content: 00_3.1_Understanding_word_embeddings
+</code></pre>
+<h3>3.1 理解词嵌入</h3>
+<h4>1. 引言</h4>
+<p>在深度学习和自然语言处理（NLP）领域，词嵌入（Word Embeddings）是将词汇映射到连续向量空间的一种方法，使得文本数据能够被神经网络处理。通过词嵌入，离散的词汇可以转换为数值向量，便于进行数学操作和模型训练。</p>
+<h4>2. 词嵌入的基本概念</h4>
+<p>词嵌入的核心是将离散的对象（如单词、图片或文档）映射到连续向量空间中。这种转换的主要目的是将非数值数据转换为神经网络可以处理的格式。最常见的文本嵌入形式是词嵌入，同时也有句子嵌入、段落嵌入和文档嵌入。</p>
+<h4>3. 词嵌入算法和框架</h4>
+<p>多个算法和框架已经被开发出来用于生成词嵌入。其中一个早期且最受欢迎的例子是Word2Vec。Word2Vec通过预测给定目标词的上下文来训练神经网络架构生成词嵌入。其主要思想是出现在相似上下文中的词往往具有相似的意义。例如，在可视化时，使用Word2Vec生成的二维词嵌入，表示相似概念的词往往聚集在一起。</p>
+<h4>4. 维度和可视化</h4>
+<p>词嵌入的维度可以从一维到数千维不等。较高的维度可以捕捉到更多的细微关系，但也会增加计算复杂性。虽然我们可以使用预训练的模型（如Word2Vec）生成嵌入，但大型语言模型（LLMs）通常会生成自己的嵌入，并在训练过程中更新这些嵌入。通过在LLM训练中优化嵌入，可以使嵌入适应特定的任务和数据。</p>
+<h4>5. 上下文化输出嵌入</h4>
+<p>LLMs不仅能够生成词嵌入，还可以生成上下文化的输出嵌入。高维嵌入的可视化是一个挑战，因为我们的感官和常见的图形表示方式通常局限于三维或更少。然而，在处理LLMs时，我们通常使用更高维度的嵌入。GPT-2和GPT-3等模型的嵌入维度基于具体的模型变体和规模有所不同，例如，GPT-3的嵌入维度高达12,288。</p>
+<h4>6. 嵌入的创建和使用</h4>
+<p>为了创建LLMs使用的嵌入，首先需要将文本分割成单词或子词，然后将这些词转换为嵌入向量。具体步骤包括：</p>
+<ol>
+<li><strong>分词</strong>：将输入文本切分为单词或子词。</li>
+<li><strong>词ID转换</strong>：将分词转换为词ID。</li>
+<li><strong>嵌入向量生成</strong>：使用嵌入层将词ID转换为嵌入向量。</li>
+</ol>
+<h4>7. 位置嵌入</h4>
+<p>为了增强模型对序列中词语顺序的理解，我们还需要为每个词添加位置信息。这可以通过绝对位置嵌入或相对位置嵌入来实现。绝对位置嵌入直接与序列中的特定位置关联，而相对位置嵌入则强调词语之间的相对位置。</p>
+<h4>8. 总结</h4>
+<p>理解和实现词嵌入是构建LLM的基础步骤。通过将词汇转换为高维向量，并结合位置嵌入，可以为LLM提供丰富的上下文信息，增强其文本生成和理解能力。这一过程依赖于深度学习技术和大规模数据集，是现代NLP技术的重要组成部分。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 00_3.1_Understanding_word_embeddings
+
+"""
+Lecture: /3_Working_with_Text_Data
+Content: 00_3.1_Understanding_word_embeddings
+"""
+
+import numpy as np
+from typing import List, Dict
+
+class WordEmbedding:
+    """
+    词嵌入类，用于将单词映射到连续向量空间
+
+    Attributes:
+        embedding_dim (int): 嵌入向量的维度
+        vocab (Dict[str, int]): 词汇表，将单词映射到索引
+        index_to_word (Dict[int, str]): 索引到单词的映射
+        embedding_matrix (np.ndarray): 嵌入矩阵，每行对应一个单词的向量表示
+    """
+
+    def __init__(self, embedding_dim: int = 100):
+        """
+        初始化WordEmbedding类
+
+        Args:
+            embedding_dim (int): 嵌入向量的维度
+        """
+        self.embedding_dim = embedding_dim
+        self.vocab = {}
+        self.index_to_word = {}
+        self.embedding_matrix = None
+
+    def build_vocab(self, sentences: List[str]):
+        """
+        构建词汇表和索引映射
+
+        Args:
+            sentences (List[str]): 句子列表，每个句子是一个字符串
+        """
+        word_set = set()
+        for sentence in sentences:
+            words = sentence.split()
+            word_set.update(words)
+
+        self.vocab = {word: idx for idx, word in enumerate(word_set)}
+        self.index_to_word = {idx: word for word, idx in self.vocab.items()}
+        self.embedding_matrix = np.random.randn(len(self.vocab), self.embedding_dim)
+        print(f"词汇表构建完成，共包含{len(self.vocab)}个单词。")
+
+    def get_embedding(self, word: str) -> np.ndarray:
+        """
+        获取单词的嵌入向量
+
+        Args:
+            word (str): 单词
+
+        Returns:
+            np.ndarray: 单词的嵌入向量
+        """
+        idx = self.vocab.get(word)
+        if idx is None:
+            raise ValueError(f"单词 '{word}' 不在词汇表中。")
+        return self.embedding_matrix[idx]
+
+    def most_similar(self, word: str, top_n: int = 5) -> List[str]:
+        """
+        找到与给定单词最相似的top_n个单词
+
+        Args:
+            word (str): 单词
+            top_n (int): 返回最相似单词的数量
+
+        Returns:
+            List[str]: 最相似的单词列表
+        """
+        if word not in self.vocab:
+            raise ValueError(f"单词 '{word}' 不在词汇表中。")
+
+        word_vec = self.get_embedding(word)
+        similarities = self.embedding_matrix @ word_vec
+        closest_idxs = np.argsort(similarities)[::-1][:top_n + 1]  # 排除自己
+        similar_words = [self.index_to_word[idx] for idx in closest_idxs if self.index_to_word[idx] != word]
+        return similar_words[:top_n]
+
+    def save_embeddings(self, file_path: str):
+        """
+        保存嵌入矩阵到文件
+
+        Args:
+            file_path (str): 文件路径
+        """
+        np.save(file_path, self.embedding_matrix)
+        print(f"嵌入矩阵已保存到 {file_path}")
+
+    def load_embeddings(self, file_path: str):
+        """
+        从文件加载嵌入矩阵
+
+        Args:
+            file_path (str): 文件路径
+        """
+        self.embedding_matrix = np.load(file_path)
+        print(f"嵌入矩阵已从 {file_path} 加载")
+
+# 示例用法
+if __name__ == "__main__":
+    sentences = [
+        "hello world",
+        "word embeddings are useful",
+        "deep learning is a subset of machine learning",
+        "machine learning is a field of artificial intelligence"
+    ]
+
+    embedding = WordEmbedding(embedding_dim=50)
+    embedding.build_vocab(sentences)
+
+    word = "machine"
+    print(f"单词 '{word}' 的嵌入向量是：\n{embedding.get_embedding(word)}")
+
+    similar_words = embedding.most_similar(word, top_n=3)
+    print(f"与单词 '{word}' 最相似的三个单词是：{similar_words}")
+
+    # 保存和加载嵌入
+    embedding.save_embeddings("/mnt/data/word_embeddings.npy")
+    embedding.load_embeddings("/mnt/data/word_embeddings.npy")
+</code></pre>
+  </div>
+</body>
+</html>
+  

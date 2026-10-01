@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>4.5 Implementing self attention mechanisms</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>04_4.5_Implementing_self-attention_mechanisms</h1>
+<pre><code>Lecture: /4_Coding_Attention_Mechanisms
+Content: 04_4.5_Implementing_self-attention_mechanisms
+</code></pre>
+<h3>4.5 实现自注意力机制</h3>
+<h4>背景介绍</h4>
+<p>自注意力机制（Self-Attention Mechanism）是深度学习模型中的关键技术，尤其在Transformer模型中得到了广泛应用。自注意力机制通过计算输入序列中各个元素之间的相关性，使模型能够灵活地选择性关注输入序列的不同部分，从而提高模型的性能和效率。</p>
+<h4>自注意力机制的基本原理</h4>
+<p>自注意力机制的核心思想是计算输入序列中每个位置的查询向量（Query）与所有其他位置的键向量（Key）之间的点积，得到注意力分数（Attention Scores）。这些分数经过归一化处理后，用于加权求和值向量（Value），从而生成最终的输出。</p>
+<h5>具体步骤</h5>
+<ol>
+<li>
+<p><strong>计算查询、键和值向量</strong>：</p>
+<ul>
+<li>输入序列中的每个元素经过线性变换得到查询向量（Q）、键向量（K）和值向量（V）。</li>
+</ul>
+</li>
+<li>
+<p><strong>计算注意力分数</strong>：</p>
+<ul>
+<li>对每个查询向量，计算其与所有键向量的点积，得到注意力分数。</li>
+<li>将注意力分数除以键向量的维度的平方根，以避免大值影响梯度计算。</li>
+</ul>
+</li>
+<li>
+<p><strong>计算注意力权重</strong>：</p>
+<ul>
+<li>对归一化后的注意力分数应用Softmax函数，得到注意力权重（Attention Weights）。</li>
+</ul>
+</li>
+<li>
+<p><strong>加权求和</strong>：</p>
+<ul>
+<li>使用注意力权重对值向量进行加权求和，得到最终的输出向量。</li>
+</ul>
+</li>
+</ol>
+<h5>数学公式</h5>
+<p>给定查询向量$ Q $、键向量$ K $和值向量$ V $，自注意力机制的计算公式为：</p>
+<p>$$ \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V $$</p>
+<p>其中，$ d_k $是键向量的维度，用于缩放点积结果。</p>
+<h4>自注意力机制的优点</h4>
+<ol>
+<li><strong>并行计算</strong>：与RNN不同，自注意力机制能够并行处理输入序列，大大提高了计算效率。</li>
+<li><strong>长距离依赖</strong>：自注意力机制能够直接捕获序列中任意位置的依赖关系，解决了RNN中长距离依赖问题。</li>
+<li><strong>可解释性</strong>：注意力权重提供了对模型决策过程的可解释性，能够展示模型在处理每个输入时关注的具体部分。</li>
+</ol>
+<h4>实现自注意力机制的关键点</h4>
+<p>在实现自注意力机制时，需要注意以下几个关键点：</p>
+<ol>
+<li>
+<p><strong>线性变换</strong>：</p>
+<ul>
+<li>输入序列通过线性变换生成查询、键和值向量。需要确保变换后的向量维度一致，以便后续计算。</li>
+</ul>
+</li>
+<li>
+<p><strong>注意力得分计算</strong>：</p>
+<ul>
+<li>计算查询向量和键向量的点积，并进行缩放处理。可以使用矩阵乘法加速计算。</li>
+</ul>
+</li>
+<li>
+<p><strong>注意力权重归一化</strong>：</p>
+<ul>
+<li>使用Softmax函数对注意力得分进行归一化处理，确保权重和为1。</li>
+</ul>
+</li>
+<li>
+<p><strong>加权求和值向量</strong>：</p>
+<ul>
+<li>使用归一化后的注意力权重对值向量进行加权求和，得到最终的输出向量。</li>
+</ul>
+</li>
+</ol>
+<h4>自注意力机制在Transformer中的应用</h4>
+<p>在Transformer模型中，自注意力机制是编码器和解码器的核心组件。Transformer的每一层都由多头自注意力机制和前馈神经网络组成。</p>
+<h5>多头自注意力机制</h5>
+<p>多头自注意力机制通过并行计算多个注意力头，捕获不同子空间中的信息。这种方法增强了模型的表达能力和学习复杂模式的能力。具体来说，多头自注意力机制包括以下步骤：</p>
+<ol>
+<li>
+<p><strong>线性变换</strong>：</p>
+<ul>
+<li>输入序列通过线性变换生成多个查询、键和值向量。</li>
+</ul>
+</li>
+<li>
+<p><strong>并行计算</strong>：</p>
+<ul>
+<li>对每个查询向量，计算其与对应键向量的点积，得到注意力分数，并通过Softmax函数得到注意力权重。</li>
+</ul>
+</li>
+<li>
+<p><strong>加权求和</strong>：</p>
+<ul>
+<li>使用注意力权重对对应值向量进行加权求和，得到每个头的输出。</li>
+</ul>
+</li>
+<li>
+<p><strong>连接和线性变换</strong>：</p>
+<ul>
+<li>将所有头的输出连接起来，通过线性变换生成最终的输出向量。</li>
+</ul>
+</li>
+</ol>
+<h4>实践中实现自注意力机制</h4>
+<p>为了演示自注意力机制的实际应用，我们需要关注以下几个方面：</p>
+<ol>
+<li>
+<p><strong>数据预处理</strong>：</p>
+<ul>
+<li>将输入序列转化为固定维度的向量表示，并进行必要的归一化处理。</li>
+</ul>
+</li>
+<li>
+<p><strong>模型初始化</strong>：</p>
+<ul>
+<li>初始化自注意力机制中的参数，包括查询、键和值向量的权重矩阵。</li>
+</ul>
+</li>
+<li>
+<p><strong>前向传播</strong>：</p>
+<ul>
+<li>计算查询、键和值向量，通过自注意力机制计算注意力权重，并生成最终的输出向量。</li>
+</ul>
+</li>
+<li>
+<p><strong>模型评估</strong>：</p>
+<ul>
+<li>使用适当的评估指标对模型进行评估，确保其在实际任务中的性能。</li>
+</ul>
+</li>
+</ol>
+<h4>总结</h4>
+<p>自注意力机制是深度学习中的一项重要技术，通过选择性地关注输入序列中的不同部分，提高了模型的性能和可解释性。多头自注意力机制进一步增强了模型的表达能力，使其在各种NLP任务中表现出色。通过详细分析自注意力机制的基本原理、数学描述和应用场景，我们可以更好地理解和应用这一强大的技术，为构建更高效的深度学习模型打下坚实的基础。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 04_4.5_Implementing_self-attention_mechanisms
+
+"""
+Lecture: /4_Coding_Attention_Mechanisms
+Content: 04_4.5_Implementing_self-attention_mechanisms
+"""
+
+</code></pre>
+  </div>
+</body>
+</html>
+  
