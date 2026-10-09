@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>3.3 Converting tokens into token IDs</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>02_3.3_Converting_tokens_into_token_IDs</h1>
+<pre><code>Lecture: /3_Working_with_Text_Data
+Content: 02_3.3_Converting_tokens_into_token_IDs
+</code></pre>
+<h3>2.3 将标记转换为标记ID</h3>
+<h4>背景介绍</h4>
+<p>在前一节中，我们已经将Edith Wharton的短篇小说拆分成了单独的标记。在这一节中，我们将把这些标记从Python字符串转换为整数表示，从而生成所谓的标记ID。这一转换是将标记ID转换为嵌入向量之前的中间步骤。</p>
+<h4>词汇表的构建</h4>
+<p>为了将之前生成的标记映射到标记ID，我们首先需要构建一个所谓的词汇表。这个词汇表定义了我们如何将每个唯一的单词和特殊字符映射到一个唯一的整数。</p>
+<h5>步骤1：标记化文本</h5>
+<p>首先，我们需要将整个训练数据集进行标记化。标记化的过程就是将文本拆分为单独的单词和标点符号。</p>
+<pre><code class="language-python"># 读取文本
+with open(&quot;the-verdict.txt&quot;, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+    raw_text = f.read()
+
+# 使用正则表达式拆分文本为标记
+preprocessed = re.split(r'([,.?_!&quot;()\']|--|\s)', raw_text)
+preprocessed = [item.strip() for item in preprocessed if item.strip()]
+print(len(preprocessed))
+</code></pre>
+<p>这个代码片段使用正则表达式将文本拆分为单词和标点符号，并去除了空白字符。最终的结果是一个包含所有标记的列表。</p>
+<h5>步骤2：构建词汇表</h5>
+<p>接下来，我们需要构建一个词汇表。词汇表是一个字典，它将每个唯一的标记映射到一个唯一的整数。</p>
+<pre><code class="language-python"># 获取所有唯一标记并排序
+all_words = sorted(list(set(preprocessed)))
+vocab_size = len(all_words)
+print(vocab_size)
+
+# 创建词汇表
+vocab = {token: integer for integer, token in enumerate(all_words)}
+for i, item in enumerate(vocab.items()):
+    print(item)
+    if i &gt; 50:
+        break
+</code></pre>
+<p>这个代码片段首先获取所有唯一的标记，并按字母顺序排序。然后，它创建了一个词汇表，将每个标记映射到一个唯一的整数。</p>
+<h4>将文本转换为标记ID</h4>
+<p>构建词汇表后，我们的下一个目标是将新的文本应用此词汇表并转换为标记ID。</p>
+<h5>步骤3：实现标记器类</h5>
+<p>我们将实现一个完整的Python标记器类，该类包含一个编码方法和一个解码方法。编码方法将文本拆分为标记，并通过词汇表将标记转换为标记ID。解码方法执行反向的整数到字符串映射，将标记ID转换回文本。</p>
+<pre><code class="language-python">class SimpleTokenizerV1:
+    def __init__(self, vocab):
+        self.str_to_int = vocab  # 词汇表，从字符串到整数的映射
+        self.int_to_str = {i: s for s, i in vocab.items()}  # 逆词汇表，从整数到字符串的映射
+
+    def encode(self, text):
+        # 使用正则表达式拆分文本为标记
+        preprocessed = re.split(r'([,.?_!&quot;()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        # 将标记转换为标记ID
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+
+    def decode(self, ids):
+        # 将标记ID转换为字符串标记
+        text = &quot; &quot;.join([self.int_to_str[i] for i in ids])
+        # 修正标点符号前的空格
+        text = re.sub(r'\s+([,.?!&quot;()\'])', r'\1', text)
+        return text
+</code></pre>
+<p>这个标记器类包含两个主要方法：</p>
+<ul>
+<li><code>encode</code>：将文本拆分为标记，并通过词汇表将标记转换为标记ID。</li>
+<li><code>decode</code>：将标记ID转换为字符串标记，并修正标点符号前的空格。</li>
+</ul>
+<h5>步骤4：实例化和测试标记器</h5>
+<p>我们从SimpleTokenizerV1类实例化一个新的标记器对象，并尝试对Edith Wharton短篇小说的一段进行标记化和解码。</p>
+<pre><code class="language-python">tokenizer = SimpleTokenizerV1(vocab)
+
+text = ```&quot;It's the last he painted, you know,&quot; Mrs. Gisburn said with pardonable pride.```
+ids = tokenizer.encode(text)
+print(ids)
+
+print(tokenizer.decode(ids))
+</code></pre>
+<p>这个代码片段首先打印生成的标记ID，然后将这些标记ID解码回原始文本。结果显示解码方法成功地将标记ID转换回原始文本。</p>
+<h4>处理新文本</h4>
+<p>我们将标记器应用于训练集中未包含的新文本样本：</p>
+<pre><code class="language-python">text = &quot;Hello, do you like tea?&quot;
+tokenizer.encode(text)
+</code></pre>
+<p>由于词汇表中没有包含单词“Hello”，会引发KeyError异常。这突显了在处理LLM时需要考虑大规模且多样化的训练集以扩展词汇表的重要性。</p>
+<h5>步骤5：改进标记器以处理未知词汇</h5>
+<p>为了处理词汇表中未包含的词汇，我们需要改进我们的标记器。我们可以添加一个特殊的&lt;unk&gt;标记来表示未知词汇。此外，我们还可以添加其他特殊标记来增强模型对上下文的理解，例如&lt;|endoftext|&gt;标记。</p>
+<pre><code class="language-python"># 添加特殊标记
+all_tokens = sorted(list(set(preprocessed)))
+all_tokens.extend([&quot;&lt;|endoftext|&gt;&quot;, &quot;&lt;|unk|&gt;&quot;])
+vocab = {token: integer for integer, token in enumerate(all_tokens)}
+
+# 改进的标记器类
+class SimpleTokenizerV2:
+    def __init__(self, vocab):
+        self.str_to_int = vocab
+        self.int_to_str = {i: s for s, i in vocab.items()}
+
+    def encode(self, text):
+        preprocessed = re.split(r'([,.?_!&quot;()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        preprocessed = [item if item in self.str_to_int else &quot;&lt;|unk|&gt;&quot; for item in preprocessed]
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+
+    def decode(self, ids):
+        text = &quot; &quot;.join([self.int_to_str[i] for i in ids])
+        text = re.sub(r'\s+([,.?!&quot;()\'])', r'\1', text)
+        return text
+</code></pre>
+<p>这个改进的标记器类在编码过程中检查每个标记是否在词汇表中。如果标记不在词汇表中，它会用&lt;|unk|&gt;标记替换。</p>
+<h4>测试改进的标记器</h4>
+<p>我们使用改进的标记器对一个包含未知词汇的新文本样本进行编码和解码。</p>
+<pre><code class="language-python">text1 = &quot;Hello, do you like tea?&quot;
+text2 = &quot;In the sunlit terraces of the palace.&quot;
+text = &quot; &lt;|endoftext|&gt; &quot;.join((text1, text2))
+print(text)
+
+tokenizer = SimpleTokenizerV2(vocab)
+print(tokenizer.encode(text))
+
+print(tokenizer.decode(tokenizer.encode(text)))
+</code></pre>
+<p>结果显示，改进的标记器能够处理未知词汇并用&lt;|unk|&gt;标记替换。此外，它还能够处理多个独立的文本片段并使用&lt;|endoftext|&gt;标记进行分隔。</p>
+<h3>总结</h3>
+<p>通过这些步骤，我们实现了一个能够将文本转换为标记ID的标记器，并能够处理未知词汇和特殊上下文标记。这个标记器为后续的嵌入向量转换打下了基础。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 02_3.3_Converting_tokens_into_token_IDs
+
+"""
+Lecture: /3_Working_with_Text_Data
+Content: 02_3.3_Converting_tokens_into_token_IDs
+"""
+
+import re
+from typing import List, Dict
+
+class Tokenizer:
+    def __init__(self, vocab: Dict[str, int]):
+        """
+        初始化标记器。
+
+        参数:
+        vocab (Dict[str, int]): 词汇表，从字符串标记到整数ID的映射。
+        """
+        self.str_to_int = vocab  # 词汇表，从字符串到整数的映射
+        self.int_to_str = {i: s for s, i in vocab.items()}  # 逆词汇表，从整数到字符串的映射
+
+    def encode(self, text: str) -> List[int]:
+        """
+        将文本编码为标记ID。
+
+        参数:
+        text (str): 输入文本。
+
+        返回:
+        List[int]: 标记ID列表。
+        """
+        # 使用正则表达式拆分文本为标记
+        preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        # 将标记转换为标记ID，处理未知标记
+        ids = [self.str_to_int.get(s, self.str_to_int["<|unk|>"]) for s in preprocessed]
+        return ids
+
+    def decode(self, ids: List[int]) -> str:
+        """
+        将标记ID解码为文本。
+
+        参数:
+        ids (List[int]): 标记ID列表。
+
+        返回:
+        str: 解码后的文本。
+        """
+        # 将标记ID转换为字符串标记
+        text = " ".join([self.int_to_str[i] for i in ids])
+        # 修正标点符号前的空格
+        text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+        return text
+
+def build_vocab(preprocessed: List[str]) -> Dict[str, int]:
+    """
+    构建词汇表。
+
+    参数:
+    preprocessed (List[str]): 预处理后的标记列表。
+
+    返回:
+    Dict[str, int]: 词汇表，从字符串标记到整数ID的映射。
+    """
+    all_tokens = sorted(list(set(preprocessed)))
+    all_tokens.extend(["<|endoftext|>", "<|unk|>"])
+    vocab = {token: integer for integer, token in enumerate(all_tokens)}
+    return vocab
+
+# 示例使用
+if __name__ == "__main__":
+    # 示例文本
+    text = """I HAD always thought Jack Gisburn rather a cheap genius -- though a good fellow enough -- so it was no great surprise to me to hear that, in"""
+
+    # 构建词汇表
+    preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+    preprocessed = [item.strip() for item in preprocessed if item.strip()]
+    vocab = build_vocab(preprocessed)
+
+    # 初始化标记器
+    tokenizer = Tokenizer(vocab)
+
+    # 编码和解码示例
+    encoded = tokenizer.encode(text)
+    print("Encoded:", encoded)
+    decoded = tokenizer.decode(encoded)
+    print("Decoded:", decoded)
+</code></pre>
+  </div>
+</body>
+</html>
+  

@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>4.4 Encoder and decoder architectures</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>03_4.4_Encoder_and_decoder_architectures</h1>
+<pre><code>Lecture: /4_Coding_Attention_Mechanisms
+Content: 03_4.4_Encoder_and_decoder_architectures
+</code></pre>
+<h3>4.4 编码器和解码器架构</h3>
+<h4>背景介绍</h4>
+<p>编码器-解码器架构（Encoder-Decoder Architecture）是一种广泛应用于自然语言处理（NLP）和机器翻译任务中的模型结构。它由两个主要部分组成：编码器（Encoder）和解码器（Decoder）。编码器将输入序列编码成固定长度的上下文向量，解码器则根据上下文向量生成目标序列。这种架构在处理序列到序列（Seq2Seq）任务时非常有效。</p>
+<h4>编码器架构</h4>
+<p>编码器的主要任务是将可变长度的输入序列编码为固定长度的上下文向量。Transformer模型中的编码器由多个相同的编码器层堆叠而成，每个编码器层包括一个多头自注意力机制和一个前馈神经网络。</p>
+<h5>编码器的具体步骤</h5>
+<ol>
+<li>
+<p><strong>输入嵌入</strong>：</p>
+<ul>
+<li>输入序列首先通过嵌入层，转化为固定维度的向量表示。</li>
+</ul>
+</li>
+<li>
+<p><strong>位置编码</strong>：</p>
+<ul>
+<li>为输入向量添加位置编码，保留序列的位置信息。</li>
+</ul>
+</li>
+<li>
+<p><strong>编码器层</strong>：</p>
+<ul>
+<li>编码器由多个相同的层叠加而成，每层包括一个多头自注意力机制和一个前馈神经网络。</li>
+</ul>
+</li>
+<li>
+<p><strong>多头自注意力机制</strong>：</p>
+<ul>
+<li>计算输入序列中每个位置的查询、键和值向量，通过自注意力机制计算注意力权重，并生成加权和的输出。</li>
+</ul>
+</li>
+<li>
+<p><strong>前馈神经网络</strong>：</p>
+<ul>
+<li>多头自注意力机制的输出经过前馈神经网络，进行非线性变换和层归一化。</li>
+</ul>
+</li>
+</ol>
+<h5>数学公式</h5>
+<p>给定输入序列$X$，编码器的计算过程为：</p>
+<ol>
+<li>
+<p>输入嵌入和位置编码：
+$$ H_0 = X + P $$
+其中，$P$为位置编码。</p>
+</li>
+<li>
+<p>多头自注意力机制：
+$$ H'<em l-1="">l = \text{MultiHeadAttention}(H</em>) $$
+其中，$l$为第$l$层，$\text{MultiHeadAttention}$表示多头自注意力机制。</p>
+</li>
+<li>
+<p>前馈神经网络：
+$$ H_l = \text{FeedForward}(H'_l) $$</p>
+</li>
+</ol>
+<p>最终，编码器输出上下文向量$H_L$，其中$L$为编码器的层数。</p>
+<h4>解码器架构</h4>
+<p>解码器的主要任务是根据编码器生成的上下文向量，逐步生成目标序列。Transformer模型中的解码器由多个相同的解码器层堆叠而成，每个解码器层包括一个多头自注意力机制、一个用于处理编码器输出的多头注意力机制和一个前馈神经网络。</p>
+<h5>解码器的具体步骤</h5>
+<ol>
+<li>
+<p><strong>目标嵌入</strong>：</p>
+<ul>
+<li>目标序列首先通过嵌入层，转化为固定维度的向量表示。</li>
+</ul>
+</li>
+<li>
+<p><strong>位置编码</strong>：</p>
+<ul>
+<li>为目标向量添加位置编码，保留序列的位置信息。</li>
+</ul>
+</li>
+<li>
+<p><strong>解码器层</strong>：</p>
+<ul>
+<li>解码器由多个相同的层叠加而成，每层包括一个多头自注意力机制、一个用于处理编码器输出的多头注意力机制和一个前馈神经网络。</li>
+</ul>
+</li>
+<li>
+<p><strong>多头自注意力机制</strong>：</p>
+<ul>
+<li>计算目标序列中每个位置的查询、键和值向量，通过自注意力机制计算注意力权重，并生成加权和的输出。</li>
+</ul>
+</li>
+<li>
+<p><strong>编码器-解码器注意力机制</strong>：</p>
+<ul>
+<li>将解码器层的输出作为查询，编码器的上下文向量作为键和值，计算注意力权重，并生成加权和的输出。</li>
+</ul>
+</li>
+<li>
+<p><strong>前馈神经网络</strong>：</p>
+<ul>
+<li>编码器-解码器注意力机制的输出经过前馈神经网络，进行非线性变换和层归一化。</li>
+</ul>
+</li>
+</ol>
+<h5>数学公式</h5>
+<p>给定目标序列$Y$和编码器的上下文向量$H_L$，解码器的计算过程为：</p>
+<ol>
+<li>
+<p>目标嵌入和位置编码：
+$$ Z_0 = Y + P' $$
+其中，$P'$为位置编码。</p>
+</li>
+<li>
+<p>多头自注意力机制：
+$$ Z'<em l-1="">l = \text{MultiHeadAttention}(Z</em>) $$</p>
+</li>
+<li>
+<p>编码器-解码器注意力机制：
+$$ Z''_l = \text{MultiHeadAttention}(Z'_l, H_L) $$</p>
+</li>
+<li>
+<p>前馈神经网络：
+$$ Z_l = \text{FeedForward}(Z''_l) $$</p>
+</li>
+</ol>
+<p>最终，解码器生成目标序列的输出向量$Z_L$。</p>
+<h4>编码器-解码器架构的优势</h4>
+<ol>
+<li><strong>处理可变长度输入和输出</strong>：编码器-解码器架构能够处理可变长度的输入和输出序列，使其在机器翻译和摘要生成等任务中表现出色。</li>
+<li><strong>捕获长距离依赖</strong>：通过多头自注意力机制，编码器-解码器架构能够有效地捕获输入和输出序列中的长距离依赖关系。</li>
+<li><strong>并行计算</strong>：与传统的RNN模型不同，Transformer中的编码器和解码器能够并行处理序列，提高了计算效率。</li>
+<li><strong>高效建模</strong>：通过多头注意力机制，模型能够在不同的子空间中学习和捕获多样化的信息，提高了模型的表达能力。</li>
+</ol>
+<h4>实际应用</h4>
+<p>编码器-解码器架构在许多NLP任务中得到了成功应用，包括但不限于：</p>
+<ol>
+<li><strong>机器翻译</strong>：将源语言序列编码为上下文向量，然后解码为目标语言序列。</li>
+<li><strong>文本摘要</strong>：将长文本编码为上下文向量，然后解码为简短摘要。</li>
+<li><strong>对话生成</strong>：将对话历史编码为上下文向量，然后解码为回复。</li>
+<li><strong>文本生成</strong>：根据给定的上下文生成连贯的文本。</li>
+</ol>
+<h4>总结</h4>
+<p>编码器-解码器架构通过编码器将输入序列编码为固定长度的上下文向量，再通过解码器根据上下文向量生成目标序列。多头注意力机制和前馈神经网络是其核心组件，增强了模型的表达能力和计算效率。这种架构在自然语言处理任务中表现出色，被广泛应用于机器翻译、文本摘要和文本生成等领域。</p>
+
+    <h3>Python 文件</h3>
+    <pre><code># 03_4.4_Encoder_and_decoder_architectures
+
+"""
+Lecture: /4_Coding_Attention_Mechanisms
+Content: 03_4.4_Encoder_and_decoder_architectures
+"""
+
+</code></pre>
+  </div>
+</body>
+</html>
+  

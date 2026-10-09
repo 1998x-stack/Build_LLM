@@ -26,6 +26,10 @@ checkpoints/
 runs/
 artifacts/
 word_embeddings.npy
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
 
 # Large local references
 /Build a Large Language Model.pdf

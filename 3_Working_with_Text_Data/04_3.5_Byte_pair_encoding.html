@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <title>3.5 Byte pair encoding</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap">
+  <link rel="stylesheet" href="../markdown.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="../markdown.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>04_3.5_Byte_pair_encoding</h1>
+<pre><code>Lecture: /3_Working_with_Text_Data
+Content: 04_3.5_Byte_pair_encoding
+</code></pre>
+<h3>2.5 字节对编码 (Byte Pair Encoding)</h3>
+<h4>背景介绍</h4>
+<p>在前几节中，我们讨论了如何使用简单的标记化方法将文本转换为标记ID。然而，简单的标记化方法在处理大量文本数据时可能效率不高。为了解决这一问题，我们将介绍一种更先进的标记化方法——字节对编码（Byte Pair Encoding，简称BPE）。</p>
+<h4>什么是字节对编码</h4>
+<p>字节对编码是一种将文本分解为子词单元的算法。这种方法在训练大规模语言模型（如GPT-2、GPT-3和ChatGPT的原始模型）时非常有效。BPE通过迭代地合并频繁出现的字符组合来构建其词汇表，从而逐步形成子词和单词。</p>
+<h4>BPE 的基本原理</h4>
+<p>BPE的核心思想是从单个字符开始，逐步合并频繁出现的字符组合，直到形成完整的单词。例如，初始词汇表包含所有单个字符（如&quot;a&quot;，&quot;b&quot;，...）。在下一阶段，BPE将频繁出现的字符组合（如&quot;e&quot;和&quot;d&quot;）合并为子词（如&quot;ed&quot;），这些子词在许多英语单词中常见，如&quot;define&quot;、&quot;depend&quot;、&quot;made&quot;和&quot;hidden&quot;。</p>
+<h5>图2.11：BPE标记器如何处理未知单词</h5>
+<p>BPE算法能够将不在预定义词汇表中的单词分解为更小的子词单元或单个字符，从而处理超出词汇范围的单词。这种能力确保了BPE标记器和相应的LLM能够处理任何文本，即使其中包含训练数据中未出现的单词。</p>
+<h4>使用BPE标记器</h4>
+<p>为了实现BPE标记器，我们可以使用一个开源的Python库<code>tiktoken</code>。这个库基于Rust实现了高效的BPE算法。可以通过Python的pip安装器从终端安装<code>tiktoken</code>库：</p>
+<pre><code class="language-shell">pip install tiktoken
+</code></pre>
+<p>安装后，我们可以从<code>tiktoken</code>库中实例化BPE标记器，如下所示：</p>
+<pre><code class="language-python">import tiktoken
+
+tokenizer = tiktoken.get_encoding(&quot;gpt2&quot;)
+</code></pre>
+<p>这个标记器的使用方法类似于我们之前实现的<code>SimpleTokenizerV2</code>，通过<code>encode</code>方法进行编码：</p>
+<pre><code class="language-python">text = &quot;Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of someunknownPlace.&quot;
+integers = tokenizer.encode(text, allowed_special={&quot;&lt;|endoftext|&gt;&quot;})
+print(integers)
+</code></pre>
+<p>上面的代码将输出以下标记ID：</p>
+<pre><code>[15496, 11, 466, 345, 588, 8887, 30, 220, 50256, 554, 262, 4252, 18250, 8812, 2114, 286, 617, 34680, 27271, 13]
+</code></pre>
+<p>我们还可以使用<code>decode</code>方法将标记ID转换回文本：</p>
+<pre><code class="language-python">strings = tokenizer.decode(integers)
+print(strings)
+</code></pre>
+<p>上面的代码将输出以下文本：</p>
+<pre><code>'Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of someunknownPlace.'
+</code></pre>
+<h4>BPE的优势</h4>
+<ol>
+<li><strong>处理未知单词</strong>：BPE标记器可以处理任何未知单词，而无需使用<code>&lt;|unk|&gt;</code>标记。这是通过将不熟悉的单词分解为更小的子词单元或字符来实现的。</li>
+<li><strong>词汇表大小可控</strong>：通过控制合并的频率，BPE可以灵活地调整词汇表的大小，从而在模型的复杂性和性能之间取得平衡。</li>
+<li><strong>提高训练效率</strong>：由于BPE标记器能够将频繁出现的字符组合合并为子词，从而减少了标记的数量，这可以显著提高训练效率。</li>
+</ol>
+<h4>实践中使用BPE</h4>
+<p>为了演示BPE的实际应用，我们可以尝试对一个包含未知单词的文本进行标记化，并检查其标记ID和解码结果。</p>
+<p>例如，考虑文本“Akwirw ier”：</p>
+<pre><code class="language-python">unknown_text = &quot;Akwirw ier&quot;
+unknown_ids = tokenizer.encode(unknown_text)
+print(unknown_ids)
+decoded_text = tokenizer.decode(unknown_ids)
+print(decoded_text)
+</code></pre>
+<p>这个示例展示了BPE标记器如何将未知单词分解为子词单元，并将其正确地编码和解码。</p>
+<h4>总结</h4>
+<p>字节对编码是一种强大的标记化方法，特别适用于处理大型文本数据和训练大规模语言模型。通过迭代合并频繁出现的字符组合，BPE能够有效地构建词汇表，并处理训练数据中未出现的单词。通过使用<code>tiktoken</code>库，我们可以轻松地实现和应用BPE标记器，为后续的模型训练打下坚实的基础    。</p>
+<hr>
+<h3>BPE的基本原理：详细分步骤解释</h3>
+<h4>步骤1：初始化词汇表</h4>
+<p>1.1 创建初始词汇表，包含所有单个字符。
+1.2 确保每个字符都作为一个独立的标记。</p>
+<h4>步骤2：统计频率</h4>
+<p>2.1 计算当前词汇表中每对相邻字符（或子词）的出现频率。
+2.2 创建一个频率表，用于记录每对相邻字符的频率。</p>
+<h4>步骤3：合并频繁字符对</h4>
+<p>3.1 从频率表中找到出现频率最高的字符对。
+3.2 合并该字符对，形成一个新的子词。
+3.3 更新词汇表，将新的子词加入词汇表。</p>
+<h4>步骤4：更新文本</h4>
+<p>4.1 将所有出现频率最高的字符对替换为新的子词。
+4.2 重新统计文本中的字符对频率，更新频率表。</p>
+<h4>步骤5：重复合并过程</h4>
+<p>5.1 重复步骤2到步骤4，直到达到预设的词汇表大小或频率阈值。
+5.2 每次合并后，检查词汇表的变化，并确保更新文本和频率表。</p>
+<h4>步骤6：终止条件</h4>
+<p>6.1 当词汇表达到预设的大小或不再有频繁出现的字符对时，停止合并。
+6.2 最终的词汇表将包含初始字符和通过合并生成的子词。</p>
+<h3>极其详细的嵌套步骤</h3>
+<h4>步骤1：初始化词汇表</h4>
+<p>1.1 准备输入文本。</p>
+<ul>
+<li>将所有训练文本加载到内存中，准备进行处理。</li>
+<li>确保文本格式一致，无需额外的预处理步骤。</li>
+</ul>
+<p>1.2 提取所有唯一字符。</p>
+<ul>
+<li>遍历整个文本，提取所有出现的字符，创建一个初始字符列表。</li>
+</ul>
+<p>1.3 创建初始词汇表。</p>
+<ul>
+<li>将所有提取的字符加入词汇表，每个字符作为一个独立的标记。</li>
+</ul>
+<h4>步骤2：统计频率</h4>
+<p>2.1 遍历文本，统计字符对出现频率。</p>
+<ul>
+<li>逐个遍历文本中的所有单词，统计每对相邻字符的出现次数。</li>
+</ul>
+<p>2.2 更新频率表。</p>
+<ul>
+<li>使用哈希表（字典）存储字符对及其频率，以便快速查询和更新。</li>
+</ul>
+<h4>步骤3：合并频繁字符对</h4>
+<p>3.1 查找最高频字符对。</p>
+<ul>
+<li>从频率表中找出频率最高的字符对（例如，&quot;e&quot; 和 &quot;d&quot;）。</li>
+</ul>
+<p>3.2 合并字符对。</p>
+<ul>
+<li>将找到的字符对合并成一个新的子词（例如，&quot;ed&quot;），更新词汇表。</li>
+</ul>
+<p>3.3 更新词汇表。</p>
+<ul>
+<li>将新的子词加入词汇表，替换所有原始字符对。</li>
+</ul>
+<h4>步骤4：更新文本</h4>
+<p>4.1 替换文本中的字符对。</p>
+<ul>
+<li>遍历文本，将所有找到的频率最高字符对替换为新的子词。</li>
+</ul>
+<p>4.2 重新统计字符对频率。</p>
+<ul>
+<li>重新遍历更新后的文本，统计新的字符对频率，更新频率表。</li>
+</ul>
+<h4>步骤5：重复合并过程</h4>
+<p>5.1 继续合并字符对。</p>
+<ul>
+<li>根据更新后的频率表，重复查找和合并频繁字符对的过程。</li>
+</ul>
+<p>5.2 检查词汇表和文本变化。</p>
+<ul>
+<li>每次合并后，检查词汇表的大小和文本的变化，确保正确合并。</li>
+</ul>
+<h4>步骤6：终止条件</h4>
+<p>6.1 达到预设词汇表大小。</p>
+<ul>
+<li>当词汇表大小达到预设阈值（例如，10,000个标记）时，停止合并。</li>
+</ul>
+<p>6.2 无更多频繁字符对。</p>
+<ul>
+<li>如果没有任何字符对的频率超过预设阈值，停止合并。</li>
+</ul>
+<p>6.3 保存最终词汇表。</p>
+<ul>
+<li>将最终生成的词汇表保存为模型的输入，供后续训练使用。</li>
+</ul>
+<hr>
+<h3>BPE的基本原理：详细步骤表</h3>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>详细描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>初始化词汇表</strong></td>
+</tr>
+<tr>
+<td>1.1</td>
+<td>准备输入文本：将所有训练文本加载到内存中，准备进行处理。</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>提取所有唯一字符：遍历整个文本，提取所有出现的字符，创建一个初始字符列表。</td>
+</tr>
+<tr>
+<td>1.3</td>
+<td>创建初始词汇表：将所有提取的字符加入词汇表，每个字符作为一个独立的标记。</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>统计频率</strong></td>
+</tr>
+<tr>
+<td>2.1</td>
+<td>遍历文本，统计字符对出现频率：逐个遍历文本中的所有单词，统计每对相邻字符的出现次数。</td>
+</tr>
+<tr>
+<td>2.2</td>
+<td>更新频率表：使用哈希表（字典）存储字符对及其频率，以便快速查询和更新。</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>合并频繁字符对</strong></td>
+</tr>
+<tr>
+<td>3.1</td>
+<td>查找最高频字符对：从频率表中找出频率最高的字符对。</td>
+</tr>
+<tr>
+<td>3.2</td>
+<td>合并字符对：将找到的字符对合并成一个新的子词，更新词汇表。</td>
+</tr>
+<tr>
+<td>3.3</td>
+<td>更新词汇表：将新的子词加入词汇表，替换所有原始字符对。</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>更新文本</strong></td>
+</tr>
+<tr>
+<td>4.1</td>
+<td>替换文本中的字符对：遍历文本，将所有找到的频率最高字符对替换为新的子词。</td>
+</tr>
+<tr>
+<td>4.2</td>
+<td>重新统计字符对频率：重新遍历更新后的文本，统计新的字符对频率，更新频率表。</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>重复合并过程</strong></td>
+</tr>
+<tr>
+<td>5.1</td>
+<td>继续合并字符对：根据更新后的频率表，重复查找和合并频繁字符对的过程。</td>
+</tr>
+<tr>
+<td>5.2</td>
+<td>检查词汇表和文本变化：每次合并后，检查词汇表的大小和文本的变化，确保正确合并。</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>终止条件</strong></td>
+</tr>
+<tr>
+<td>6.1</td>
+<td>达到预设词汇表大小：当词汇表大小达到预设阈值时，停止合并。</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>无更多频繁字符对：如果没有任何字符对的频率超过预设阈值，停止合并。</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td>保存最终词汇表：将最终生成的词汇表保存为模型的输入，供后续训练使用。</td>
+</tr>
+</tbody>
+</table>
+<h3>表格说明</h3>
+<ol>
+<li><strong>初始化词汇表</strong>：这一部分包含了初始字符提取和词汇表创建的步骤，确保所有字符都作为独立标记加入词汇表。</li>
+<li><strong>统计频率</strong>：统计当前词汇表中每对相邻字符的出现频率，并记录在频率表中。</li>
+<li><strong>合并频繁字符对</strong>：找到频率最高的字符对，将其合并为新的子词，并更新词汇表。</li>
+<li><strong>更新文本</strong>：在文本中替换频率最高的字符对为新的子词，并重新统计字符对的频率。</li>
+<li><strong>重复合并过程</strong>：持续合并频繁字符对，直到达到预设的词汇表大小或频率阈值。</li>
+<li><strong>终止条件</strong>：合并过程达到预设条件后，停止并保存最终生成的词汇表。</li>
+</ol>
+<hr>
+
+    <h3>Python 文件</h3>
+    <pre><code># 04_3.5_Byte_pair_encoding
+
+"""
+Lecture: /3_Working_with_Text_Data
+Content: 04_3.5_Byte_pair_encoding
+"""
+
+import re
+from typing import List, Tuple, Dict
+
+class BytePairEncoding:
+    def __init__(self, vocab_size: int):
+        """
+        初始化BPE编码器。
+
+        参数:
+        vocab_size (int): 词汇表的目标大小。
+        """
+        self.vocab_size = vocab_size
+        self.vocab = {}
+        self.bpe_codes = {}
+    
+    def _get_stats(self, corpus: List[str]) -> Dict[Tuple[str, str], int]:
+        """
+        统计字符对的频率。
+
+        参数:
+        corpus (List[str]): 文本语料库，已拆分为字符对的形式。
+
+        返回:
+        Dict[Tuple[str, str], int]: 字符对及其频率的字典。
+        """
+        pairs = {}
+        for word in corpus:
+            symbols = word.split()
+            for i in range(len(symbols) - 1):
+                pair = (symbols[i], symbols[i + 1])
+                if pair not in pairs:
+                    pairs[pair] = 0
+                pairs[pair] += 1
+        return pairs
+
+    def _merge_vocab(self, pair: Tuple[str, str], corpus: List[str]) -> List[str]:
+        """
+        合并字符对。
+
+        参数:
+        pair (Tuple[str, str]): 要合并的字符对。
+        corpus (List[str]): 文本语料库，已拆分为字符对的形式。
+
+        返回:
+        List[str]: 更新后的文本语料库。
+        """
+        bigram = re.escape(' '.join(pair))
+        pattern = re.compile(r'(?<!\S)' + bigram + r'(?!\S)')
+        return [pattern.sub(''.join(pair), word) for word in corpus]
+    
+    def fit(self, corpus: List[str]) -> None:
+        """
+        训练BPE模型。
+
+        参数:
+        corpus (List[str]): 文本语料库。
+        """
+        corpus = [' '.join(word) + ' </w>' for word in corpus]
+        self.vocab = {word: corpus.count(word) for word in corpus}
+        
+        for _ in range(self.vocab_size - len(self.vocab)):
+            pairs = self._get_stats(corpus)
+            if not pairs:
+                break
+            best_pair = max(pairs, key=pairs.get)
+            corpus = self._merge_vocab(best_pair, corpus)
+            self.bpe_codes[best_pair] = len(self.bpe_codes)
+            self.vocab = {word: corpus.count(word) for word in set(corpus)}
+
+    def encode(self, text: str) -> List[str]:
+        """
+        使用BPE编码文本。
+
+        参数:
+        text (str): 要编码的文本。
+
+        返回:
+        List[str]: 编码后的子词列表。
+        """
+        word = ' '.join(text) + ' </w>'
+        symbols = word.split()
+        while True:
+            pairs = [(symbols[i], symbols[i + 1]) for i in range(len(symbols) - 1)]
+            pairs = [(pair, self.bpe_codes[pair]) for pair in pairs if pair in self.bpe_codes]
+            if not pairs:
+                break
+            best_pair = min(pairs, key=lambda x: x[1])[0]
+            symbols = self._merge_vocab(best_pair, [' '.join(symbols)])[0].split()
+        return symbols
+    
+    def decode(self, tokens: List[str]) -> str:
+        """
+        解码BPE子词列表为文本。
+
+        参数:
+        tokens (List[str]): BPE子词列表。
+
+        返回:
+        str: 解码后的文本。
+        """
+        return ''.join(tokens).replace(' </w>', '')
+
+# 示例使用
+if __name__ == "__main__":
+    # 示例文本语料库
+    corpus = ["low", "lowest", "newer", "wider"]
+    
+    # 初始化BPE编码器
+    bpe = BytePairEncoding(vocab_size=50)
+    
+    # 训练BPE模型
+    bpe.fit(corpus)
+    
+    # 编码示例
+    encoded = bpe.encode("lower")
+    print("Encoded:", encoded)
+    
+    # 解码示例
+    decoded = bpe.decode(encoded)
+    print("Decoded:", decoded)</code></pre>
+  </div>
+</body>
+</html>
+  
